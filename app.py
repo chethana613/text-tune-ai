@@ -6,7 +6,7 @@ from audiocraft.models import MusicGen
 app = Flask(__name__)
 
 def query_gpt(user_prompt, theme):
-    openai.api_key = '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'
+    openai.api_key = 'Enter API Key'
     try:
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo-0125",
