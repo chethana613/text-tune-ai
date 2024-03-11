@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Generation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="range"] {
+            width: calc(100% - 22px);
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Text Tune AI</h1>
+        <form id="musicForm" action="/process_input" method="post">
+            <label for="user_prompt">User Prompt:</label><br>
+            <input type="text" id="user_prompt" name="user_prompt"><br>
+            <label for="theme">Theme:</label><br>
+            <input type="text" id="theme" name="theme"><br>
+            <label for="duration">Duration:</label><br>
+            <!-- Use range input for duration -->
+            <input type="range" id="duration" name="duration" min="5" max="20" value="5" step="1"><br>
+            <output for="duration" id="durationOutput">5</output> seconds<br><br>
+            <input type="submit" value="Generate Music">
+        </form>
+        <br>
+        {% if audio_file %}
+            <audio controls>
+                <source src="{{ audio_file }}" type="audio/wav">
+                Your browser does not support the audio element.
+            </audio>
+            <br>
+            <a href="{{ audio_file }}" download>Download Audio</a>
+        {% elif error_message %}
+            <p>{{ error_message }}</p>
+        {% else %}
+            <p>Please try again later.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
