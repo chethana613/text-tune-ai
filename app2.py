@@ -3,10 +3,11 @@ from audiocraft.models import MusicGen
 from IPython.display import display
 from scipy.io import wavfile
 import openai
-
+import numpy as np
+import librosa
 
 def query_gpt(user_prompt, theme):
-    openai.api_key = 'Enter The Key'
+    openai.api_key = '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'
     try:
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo-0125",
@@ -16,8 +17,6 @@ def query_gpt(user_prompt, theme):
             ]
         )
         print(f"GPT Response: {response}")
-        #print(response['choices'][0]['message']['content'])
-        #return response['choices'][0]['message']['content']
         if response.choices:
             choice = response.choices[0]
             if choice.finish_reason == "stop":
@@ -30,11 +29,10 @@ def query_gpt(user_prompt, theme):
             return ""
 
     except Exception as e:
-        # Handle any exception that occurs during the OpenAI API request
         print(f"An error occurred during the OpenAI API request: {e}")
         return ""
 
-def generate_music_tensors(prompt, model, duration,sr):
+def generate_music_tensors(prompt, model, duration, sr):
     model.set_generation_params(
         use_sampling=True,
         top_k=250,
@@ -50,30 +48,33 @@ def generate_music_tensors(prompt, model, duration,sr):
     audio = output[0]
     return audio[:, :int(float(duration) * sr)]
 
-def process_input(user_prompt, theme, model, duration,sr):
+def compute_fad_score(generated_audio, target_audio, sr):
+    gen_spec = np.abs(librosa.stft(generated_audio.squeeze().cpu().numpy()))
+    target_spec = np.abs(librosa.stft(target_audio.squeeze()))
+    fad_score = np.mean(np.abs(gen_spec - target_spec))
+    return fad_score
+
+def process_input(user_prompt, theme, model, duration, sr):
     print("User input:", user_prompt)
     print("Theme:", theme)
     print("Duration:", duration)
     s = ""
     if user_prompt:
         s += user_prompt + ", "
-    if (theme != ""):
-        res = query_gpt(user_prompt,theme)
-        if (res != ""):
+    if theme != "":
+        res = query_gpt(user_prompt, theme)
+        if res != "":
             s += res
-
 
     print("Combined prompt:", s)
     if s and duration:
-        #audio_data, sampling_rate = generate_audio(s, model, float(duration))
-        music_tensors = generate_music_tensors(s, model,duration,sr)
-        return music_tensors, sr
+        music_tensors = generate_music_tensors(s, model, duration, sr)
+        return music_tensors, s
     else:
         print("Invalid prompt")
         return None, None
 
 def main():
-    #model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
     model = MusicGen.get_pretrained('facebook/musicgen-small')
 
     user_prompt = input("Enter user input: ")
@@ -81,12 +82,20 @@ def main():
     duration = input("Enter tune duration (in seconds): ")
     sampling_rate = 32000
 
-    audio_data,sampling_rate  = process_input(user_prompt, theme, model, duration, sampling_rate)
+    audio_data, theme_description = process_input(user_prompt, theme, model, duration, sampling_rate)
 
-    if audio_data is not None and sampling_rate is not None:
+    if audio_data is not None and theme_description is not None:
         print("Audio file generated")
+
         IPython.display.display(IPython.display.Audio(audio_data.cpu().numpy().squeeze(), rate=sampling_rate))
-        wavfile.write("/content/sample_data/text-tune-ai/output/download2.wav", rate=sampling_rate, data=audio_data[0, 0].cpu().numpy())
+        wavfile.write("/content/sample_data/text-tune-ai/output/download3.wav", rate=sampling_rate, data=audio_data[0, 0].cpu().numpy())
+        # Assuming you have a target audio file for comparison
+        target_audio, _ = librosa.load('/content/sample_data/text-tune-ai/output/download2.wav', sr=sampling_rate)
+
+        # Calculate FAD Score
+        fad_score = compute_fad_score(audio_data, target_audio, sampling_rate)
+        print("FAD Score:", fad_score)
+
     else:
         print("There is something wrong with the audio generation")
 
